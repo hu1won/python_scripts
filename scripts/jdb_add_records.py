@@ -99,13 +99,24 @@ def insert_records_with_examiners():
         # 데이터 삽입
         for year, job_cycl, exmnr_nm in combinations:
             try:
+                # 중복 검사 (crtr_yr를 문자열로 변환)
                 cursor.execute(
-                    f"INSERT INTO {table_name} (crtr_yr, job_cycl, exmnr_nm, reg_uid) VALUES (%s, %s, %s, %s)",
-                    (year, job_cycl, exmnr_nm, 'administrator')
+                    f"SELECT COUNT(*) FROM {table_name} WHERE crtr_yr = %s AND job_cycl = %s AND exmnr_nm = %s",
+                    (str(year), job_cycl, exmnr_nm)  # year를 문자열로 변환
                 )
-                connection.commit()  # 각 데이터 삽입 후 즉시 커밋
-                time.sleep(0.1)
-                print(f"Inserted {year}, {job_cycl}, {exmnr_nm}")
+                count = cursor.fetchone()[0]
+                
+                if count == 0:  # 중복이 없을 경우에만 삽입
+                    cursor.execute(
+                        f"INSERT INTO {table_name} (crtr_yr, job_cycl, exmnr_nm, reg_uid) VALUES (%s, %s, %s, %s)",
+                        (str(year), job_cycl, exmnr_nm, 'administrator')  # year를 문자열로 변환
+                    )
+                    connection.commit()  # 각 데이터 삽입 후 즉시 커밋
+                    time.sleep(0.01)
+                    print(f"Inserted {year}, {job_cycl}, {exmnr_nm}")
+                else:
+                    print(f"Duplicate entry for {year}, {job_cycl}, {exmnr_nm} not inserted.")
+                    
             except Exception as e:
                 print(f"Error during insert for {year}, {job_cycl}, {exmnr_nm}: {e}")
                 connection.rollback()  # 오류가 발생하면 롤백
