@@ -1,5 +1,6 @@
 # jdb_add_records.py
 import itertools
+import time
 from dotenv import load_dotenv
 import os
 import psycopg2
@@ -73,6 +74,46 @@ def insert_unique_records():
     
     except Exception as e:
         print(f"Error: {e}")
+    
+    finally:
+        # 연결 종료
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+            
+def insert_records_with_examiners():
+    try:
+        # 데이터베이스에 연결
+        connection = psycopg2.connect(**db_config)
+        cursor = connection.cursor()
+
+        # 조합 생성
+        years = range(2018, 2024)  # 2018부터 2023까지
+        job_cycles = [1, 2, 3]  # job_cycl에 1, 2, 3만 포함
+        exmnr_names = [f'조사원{i}' for i in range(1, 101)]
+        
+        # 중복 없는 조합 생성
+        combinations = itertools.product(years, job_cycles, exmnr_names)
+        
+        # 데이터 삽입
+        for year, job_cycl, exmnr_nm in combinations:
+            try:
+                cursor.execute(
+                    f"INSERT INTO {table_name} (crtr_yr, job_cycl, exmnr_nm, reg_uid) VALUES (%s, %s, %s, %s)",
+                    (year, job_cycl, exmnr_nm, 'administrator')
+                )
+                connection.commit()  # 각 데이터 삽입 후 즉시 커밋
+                time.sleep(0.1)
+                print(f"Inserted {year}, {job_cycl}, {exmnr_nm}")
+            except Exception as e:
+                print(f"Error during insert for {year}, {job_cycl}, {exmnr_nm}: {e}")
+                connection.rollback()  # 오류가 발생하면 롤백
+    
+    except Exception as e:
+        print(f"Error: {e}")
+        if connection:
+            connection.rollback()  # 전체 트랜잭션 실패 시 롤백
     
     finally:
         # 연결 종료
