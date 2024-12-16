@@ -1,4 +1,5 @@
 # jdb_add_records.py
+import itertools
 from dotenv import load_dotenv
 import os
 import psycopg2
@@ -45,4 +46,37 @@ def print_db_contents():
         if connection:
             connection.close()
             
-print_db_contents()
+def insert_unique_records():
+    try:
+        # 데이터베이스에 연결
+        connection = psycopg2.connect(**db_config)
+        cursor = connection.cursor()
+        
+        # 조합 생성
+        years = range(2020, 2024)
+        regions = ['JEJU', 'SEOGWIPO']
+        group_numbers = range(2, 9) 
+        job_cycles = [1, 2, 3]
+        
+        # 중복 없는 조합 생성
+        combinations = itertools.product(years, regions, group_numbers, job_cycles)
+        
+        # 데이터 삽입
+        for year, region, group_no, job_cycl in combinations:
+            cursor.execute(
+                f"INSERT INTO {table_name} (crtr_yr, obsrvn_group_rgn_cd, obsrvn_group_no, job_cycl, reg_uid) VALUES (%s, %s, %s, %s, %s)",
+                (year, region, group_no, job_cycl, 'administrator')
+            )
+        
+        # 변경 사항 커밋
+        connection.commit()
+    
+    except Exception as e:
+        print(f"Error: {e}")
+    
+    finally:
+        # 연결 종료
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
