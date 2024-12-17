@@ -43,7 +43,7 @@ max_retries = 3
 for attempt in range(max_retries):
     try:
         print("Reading data from tobsrvn_exmn_lst table...")
-        tobsrvn_df = pd.read_sql('SELECT crtr_yr, frmlnd_addr, brdt, mbl_telno, home_telno, dpst_actno, cert_frmhs_nm, exmn_psblty_yn FROM tobsrvn_exmn_lst', source_engine)
+        tobsrvn_df = pd.read_sql('SELECT crtr_yr, frmlnd_addr, brdt, mbl_telno, home_telno, dpst_actno, dlng_bank_nm, cert_frmhs_nm, exmn_psblty_yn FROM tobsrvn_exmn_lst', source_engine)
         print(f"Data read successfully. Number of records: {len(tobsrvn_df)}")
         break  # 성공적으로 읽으면 루프 종료
     except OperationalError as e:
@@ -74,7 +74,7 @@ obsrvn_df = pd.DataFrame({
     'mbl_telno': tobsrvn_df['mbl_telno'],
     'home_telno': tobsrvn_df['home_telno'],
     'actno': tobsrvn_df['dpst_actno'],  # actno에 dpst_actno 매핑
-    'bank_cd': None,  # bank_cd는 None으로 설정 (필요시 수정)
+    'bank_cd': tobsrvn_df['dlng_bank_nm'],  # bank_cd에 dlng_bank_nm 매핑
     'frmhs_nm': tobsrvn_df['cert_frmhs_nm'].fillna('Unknown'),  # frmhs_nm에 korn_flnm 매핑, None인 경우 "Unknown"으로 대체
     'exmn_psblty_yn': tobsrvn_df['exmn_psblty_yn'],
     'vrty_nm': None,  # vrty_nm은 None으로 설정 (필요시 수정)
