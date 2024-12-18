@@ -54,9 +54,9 @@ def insert_unique_records():
         cursor = connection.cursor()
         
         # 조합 생성
-        years = range(2020, 2024)
+        years = range(2018, 2020)
         regions = ['JEJU', 'SEOGWIPO']
-        group_numbers = range(2, 9) 
+        group_numbers = range(1, 9) 
         job_cycles = [1, 2, 3]
         
         # 중복 없는 조합 생성
@@ -132,3 +132,6 @@ def insert_records_with_examiners():
             cursor.close()
         if connection:
             connection.close()
+
+
+insert_unique_records()
