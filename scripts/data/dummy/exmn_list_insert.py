@@ -27,6 +27,9 @@ def insert_data_from_excel(excel_file_path):
         # Excel 파일 읽기 - skiprows=1 옵션을 추가하여 첫 번째 행을 건너뜁니다
         df = pd.read_excel(excel_file_path, skiprows=1)
         
+        # 빈 값을 '알수없음'으로 대체
+        df = df.fillna('알수없음')
+        
         # DB 연결
         conn = psycopg2.connect(**db_config)
         cursor = conn.cursor()
