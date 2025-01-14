@@ -30,10 +30,10 @@ def insert_test_data():
         for i in range(1, 51):
             cur.execute("""
                 INSERT INTO jadxdb2.obsrvn_exmn_lst 
-                (crtr_yr, brdt, mbl_telno, exmn_psblty_yn, del_yn, reg_uid, frmhs_nm)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                (crtr_yr, brdt, mbl_telno, exmn_psblty_yn, del_yn, reg_uid, frmhs_nm, frmhs_addr)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING obsrvn_exmn_lst_uid
-            """, ('2024', '20250113', '01012345678', 'Y', 'N', 'test', f'테스트{i}'))
+            """, ('2024', '20250113', '01012345678', 'Y', 'N', 'test', f'테스트{i}', '테스트 주소'))
             
             uid = cur.fetchone()[0]
             inserted_uids.append(uid)
