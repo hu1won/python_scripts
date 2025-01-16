@@ -2,6 +2,12 @@ from dotenv import load_dotenv
 import os
 import pandas as pd
 import psycopg2
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut
+import time
+import ssl
+import certifi
+import geopy.geocoders
 
 load_dotenv()
 
@@ -19,8 +25,23 @@ db_config = {
     'port': db_port,
 }
 
+# SSL 컨텍스트 설정 추가
+ctx = ssl.create_default_context(cafile=certifi.where())
+geopy.geocoders.options.default_ssl_context = ctx
+
 def insert_iot_eqpment():
     pass
+
+def get_coordinates(address):
+    try:
+        geolocator = Nominatim(user_agent="my_app")
+        location = geolocator.geocode(address)
+        if location:
+            return location.latitude, location.longitude
+        return None, None
+    except GeocoderTimedOut:
+        time.sleep(1)
+        return None, None
 
 def aws_insert_iot_eqpment():
     try:
@@ -35,11 +56,11 @@ def aws_insert_iot_eqpment():
         conn = psycopg2.connect(**db_config)
         cur = conn.cursor()
         
-        # INSERT 쿼리 수정 (reg_uid 추가)
+        # INSERT 쿼리 수정 (lat, lng 추가)
         insert_query = """
             INSERT INTO jadxdb2.snsr_eqpmnt 
-            (snsr_uid, snsr_type, snsr_eqpmnt_nm, addr, reg_uid) 
-            VALUES (%s, %s, %s, %s, %s)
+            (snsr_uid, snsr_type, snsr_eqpmnt_nm, addr, lat, lng, reg_uid) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
         
         print("\n=== 삽입될 데이터 샘플 ===")
@@ -47,11 +68,16 @@ def aws_insert_iot_eqpment():
         
         # 데이터 삽입
         for _, row in df.iterrows():
+            # 주소로부터 위도, 경도 구하기
+            lat, lng = get_coordinates(row['주소2'])
+            
             values = (
                 str(row['우편번호']),  # snsr_uid
                 'AWS',                # snsr_type
                 row['표출명'],         # snsr_eqpmnt_nm
                 row['주소2'],         # addr
+                lat,                  # latitude
+                lng,                  # longitude
                 'administrator'       # reg_uid
             )
             
@@ -62,6 +88,9 @@ def aws_insert_iot_eqpment():
             # DB에 데이터 삽입
             cur.execute(insert_query, values)
             inserted_count += 1
+            
+            # API 제한을 피하기 위한 잠깐의 대기
+            time.sleep(1)
         
         # 변경사항 저장 및 연결 종료
         conn.commit()
