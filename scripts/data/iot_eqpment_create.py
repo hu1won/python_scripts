@@ -104,8 +104,63 @@ def aws_insert_iot_eqpment():
             conn.close()
         return {"error": f"데이터 삽입 중 오류 발생: {str(e)}"}
 
+def ad_insert_iot_eqpment():
+    try:
+        # 엑셀 파일 읽기
+        df = pd.read_excel('디지털트랩가공데이터.xlsx')
+        print("\n=== 엑셀 파일 구조 ===")
+        print(df.head())
+        print("\n=== 컬럼 목록 ===")
+        print(df.columns.tolist())
+        
+        # 데이터베이스 연결
+        conn = psycopg2.connect(**db_config)
+        cur = conn.cursor()
+        
+        # INSERT 쿼리
+        insert_query = """
+            INSERT INTO jadxdb2.snsr_eqpmnt 
+            (snsr_uid, snsr_type, snsr_eqpmnt_nm, addr, lat, lng, reg_uid) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """
+        
+        print("\n=== 삽입될 데이터 샘플 ===")
+        inserted_count = 0
+        
+        # 데이터 삽입
+        for _, row in df.iterrows():
+            values = (
+                str(row['uid']),                    # snsr_uid
+                'DT',                               # snsr_type
+                f"{row['표출명']}_{row['uid']}",    # snsr_eqpmnt_nm
+                row['주소'],                        # addr
+                float(row['위도']),                 # latitude
+                float(row['경도']),                 # longitude
+                'administrator'                     # reg_uid
+            )
+            
+            # 처음 5개 행 출력
+            if _ < 5:
+                print(f"데이터: {values}")
+            
+            # DB에 데이터 삽입
+            cur.execute(insert_query, values)
+            inserted_count += 1
+        
+        # 변경사항 저장 및 연결 종료
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {"message": f"디지털트랩 데이터 삽입 완료. 총 {inserted_count}개 행이 삽입되었습니다."}
+    
+    except Exception as e:
+        if 'conn' in locals():
+            conn.close()
+        return {"error": f"데이터 삽입 중 오류 발생: {str(e)}"}
+
 # 함수 실행
 if __name__ == "__main__":
-    result = aws_insert_iot_eqpment()
+    result = ad_insert_iot_eqpment()
     print("\n=== 실행 결과 ===")
     print(result)
