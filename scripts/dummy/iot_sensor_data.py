@@ -44,30 +44,74 @@ def get_sensor_equipment():
 def generate_dummy_rtu_data(snsr_eqpmnt_uid, count=100):
     data = []
     base_date = datetime.now()
+    modes = [0, 1, 2, 6, 8]
+    error_codes = ['100', '101', '102', '110', '205', '206', '207']
     
     for i in range(count):
         log_date = base_date - timedelta(hours=i)
-        data.append({
+        mode = random.choice(modes)
+        
+        # 기본 데이터 구조
+        item = {
             'snsr_eqpmnt_uid': snsr_eqpmnt_uid,
-            'mode': '1',
-            'pressure': round(random.uniform(900, 1100), 3),
-            'tp': round(random.uniform(-10, 40), 3),
-            'soil_potential': round(random.uniform(-100, 0), 3),
-            'teros21_tp': round(random.uniform(-5, 30), 3),
-            'soil_moisture': round(random.uniform(0, 100), 3),
-            'teros12_tp': round(random.uniform(-5, 30), 3),
-            'ec': round(random.uniform(0, 5), 3),
-            'rsrp': random.randint(-140, -40),
-            'rssi': random.randint(-100, -40),
-            'rsrq': random.randint(-20, 0),
-            'telecom_cd': random.choice(['SKT', 'KT', 'LGU']),
-            'channel': str(random.randint(1, 100)),
+            'mode': str(mode),
             'ver': 'T.08',
             'imsi': ''.join(random.choices(string.digits, k=15)),
             'snsr_log_dt': log_date.strftime('%Y%m%d'),
             'snsr_log_tm': log_date.strftime('%H%M%S'),
-            'err_cd': str(random.randint(100, 999))
-        })
+        }
+        
+        # 모드별 데이터 추가
+        if mode in [0, 1, 2]:
+            item.update({
+                'pressure': round(random.uniform(900, 1100), 3),
+                'tp': round(random.uniform(-10, 40), 3),
+                'soil_potential': round(random.uniform(-100, 0), 3),
+                'teros21_tp': round(random.uniform(-5, 30), 3),
+                'soil_moisture': round(random.uniform(0, 100), 3),
+                'teros12_tp': round(random.uniform(-5, 30), 3),
+                'ec': round(random.uniform(0, 5), 3),
+                'rsrp': random.randint(-140, -40),
+                'rssi': random.randint(-100, -40),
+                'rsrq': random.randint(-20, 0),
+                'telecom_cd': random.choice(['SKT', 'KT', 'LGU']),
+                'channel': str(random.randint(1, 100)),
+                'err_cd': None
+            })
+        elif mode == 6:
+            item.update({
+                'pressure': None,
+                'tp': None,
+                'soil_potential': None,
+                'teros21_tp': None,
+                'soil_moisture': None,
+                'teros12_tp': None,
+                'ec': None,
+                'rsrp': random.randint(-140, -40),
+                'rssi': random.randint(-100, -40),
+                'rsrq': random.randint(-20, 0),
+                'telecom_cd': random.choice(['SKT', 'KT', 'LGU']),
+                'channel': str(random.randint(1, 100)),
+                'err_cd': random.choice(error_codes)
+            })
+        elif mode == 8:
+            item.update({
+                'pressure': 0,
+                'tp': 0,
+                'soil_potential': round(random.uniform(-7000, -6500), 3),
+                'teros21_tp': round(random.uniform(20, 25), 3),
+                'soil_moisture': round(random.uniform(1800, 2000), 3),
+                'teros12_tp': round(random.uniform(20, 25), 3),
+                'ec': 0,
+                'rsrp': random.randint(-140, -40),
+                'rssi': random.randint(-100, -40),
+                'rsrq': random.randint(-20, 0),
+                'telecom_cd': random.choice(['SKT', 'KT', 'LGU']),
+                'channel': str(random.randint(1, 100)),
+                'err_cd': random.choice(error_codes)
+            })
+        
+        data.append(item)
     return data
 
 def generate_dummy_aws_data(snsr_eqpmnt_uid, count=100):
@@ -102,17 +146,36 @@ def generate_dummy_ad_data(snsr_eqpmnt_uid, count=100):
     
     for i in range(count):
         log_date = base_date - timedelta(hours=i)
-        data.append({
-            'snsr_eqpmnt_uid': snsr_eqpmnt_uid,
-            'sht_time': log_date,
-            'sender': f'DT{random.randint(1000, 9999)}',
-            'insd_tp': round(random.uniform(15, 35), 3),
-            'insd_hum': round(random.uniform(30, 80), 3),
-            'otsd_tp': round(random.uniform(-10, 40), 3),
-            'otsd_hum': round(random.uniform(20, 90), 3),
-            'btry_volt': round(random.uniform(2.5, 4.2), 3),
-            'img': f'image_{random.randint(1000, 9999)}.jpg'
-        })
+        
+        # 50% 확률로 이미지 포함 여부 결정
+        has_image = random.choice([True, False])
+        
+        if has_image:
+            # 이미지가 있는 경우: img, sender, capture_time만 포함
+            data.append({
+                'snsr_eqpmnt_uid': snsr_eqpmnt_uid,
+                'sht_time': log_date,
+                'sender': f'DT{random.randint(1000, 9999)}',
+                'insd_tp': None,
+                'insd_hum': None,
+                'otsd_tp': None,
+                'otsd_hum': None,
+                'btry_volt': None,
+                'img': f'image_{random.randint(1000, 9999)}.jpg'
+            })
+        else:
+            # 이미지가 없는 경우: img를 제외한 모든 필드 포함
+            data.append({
+                'snsr_eqpmnt_uid': snsr_eqpmnt_uid,
+                'sht_time': log_date,
+                'sender': f'DT{random.randint(1000, 9999)}',
+                'insd_tp': round(random.uniform(15, 35), 3),
+                'insd_hum': round(random.uniform(30, 80), 3),
+                'otsd_tp': round(random.uniform(-10, 40), 3),
+                'otsd_hum': round(random.uniform(20, 90), 3),
+                'btry_volt': round(random.uniform(0, 100), 3),
+                'img': None
+            })
     return data
 
 def generate_unique_uid(table_name):
