@@ -114,30 +114,82 @@ def generate_dummy_rtu_data(snsr_eqpmnt_uid, count=100):
         data.append(item)
     return data
 
+def get_sensor_value_range(sensor_code):
+    # 센서 코드별 값의 범위 정의
+    ranges = {
+        # 기온 관련 (섭씨)
+        'G1': (-30, 50),  # 현재기온
+        'G36': (-30, 50), # 최고기온
+        'G37': (-30, 50), # 최저기온
+        'G38': (-30, 50), # 최고기온 2
+        'G39': (-30, 50), # 최저기온 2
+        'G40': (-30, 50), # 최고기온 3
+        'G41': (-30, 50), # 최저기온 3
+        
+        # 풍속 관련 (m/s)
+        'G2': (0, 50),    # 기온 2
+        'G3': (0, 50),    # 기온 3
+        
+        # 풍향 관련 (도)
+        'G4': (0, 360),   # 풍향 1
+        'G5': (0, 360),   # 풍향 2
+        'G6': (0, 360),   # 풍향 3
+        
+        # 습도 관련 (%)
+        'G7': (0, 100),   # 습도
+        'G8': (0, 100),   # 풍속 2
+        'G9': (0, 100),   # 풍속 3
+        
+        # 대기압 관련 (hPa)
+        'G10': (900, 1100),  # 대기압도
+        
+        # 습도 관련 (%)
+        'G11': (0, 100),  # 습도 2
+        'G12': (0, 100),  # 습도 3
+        
+        # 강수량 관련 (mm)
+        'G13': (0, 100),  # 강수량
+        
+        # 토양수분 관련 (%)
+        'G14': (0, 100),  # 토양수분
+        'G15': (0, 100),  # 토양수분 2
+        'G16': (0, 100),  # 토양수분 3
+        
+        # 일사량 관련 (W/m²)
+        'G17': (0, 1200), # 이슬지속시간
+        'G18': (0, 1200), # 일사량
+        'G19': (0, 1200), # 일조량
+        
+        # 지중온도 관련 (섭씨)
+        'G20': (-10, 40), # 초상온도
+        'G21': (-10, 40), # 토양온도,지중온도
+        'G22': (-10, 40), # 지중온도 2
+        'G23': (-10, 40), # 지중온도 3
+    }
+    
+    # 기본값 범위 (0-100)
+    default_range = (0, 100)
+    
+    return ranges.get(sensor_code, default_range)
+
 def generate_dummy_aws_data(snsr_eqpmnt_uid, count=100):
     data = []
     base_date = datetime.now()
-    sensor_codes = ['TMP', 'HUM', 'RAI', 'WIN', 'DIR']  # 온도, 습도, 강우, 풍속, 풍향
+    sensor_codes = [f'G{i}' for i in range(1, 76)]  # G1부터 G75까지
     
     for i in range(count):
         log_date = base_date - timedelta(hours=i)
-        for snsr_cd in sensor_codes:
-            value = {
-                'TMP': random.uniform(-10, 40),  # 온도
-                'HUM': random.uniform(0, 100),   # 습도
-                'RAI': random.uniform(0, 50),    # 강우
-                'WIN': random.uniform(0, 20),    # 풍속
-                'DIR': random.uniform(0, 360),   # 풍향
-            }[snsr_cd]
-            
-            data.append({
-                'snsr_eqpmnt_uid': snsr_eqpmnt_uid,
-                'sn': f'AWS{random.randint(1000, 9999)}',
-                'snsr_log_dt': log_date.strftime('%Y%m%d'),
-                'snsr_log_tm': log_date.strftime('%H%M%S'),
-                'snsr_cd': snsr_cd,
-                'snsr_vl': round(value, 3)
-            })
+        sensor_code = random.choice(sensor_codes)
+        min_val, max_val = get_sensor_value_range(sensor_code)
+        
+        data.append({
+            'snsr_eqpmnt_uid': snsr_eqpmnt_uid,
+            'sn': ''.join(random.choices(string.digits, k=10)),
+            'snsr_log_dt': log_date.strftime('%Y%m%d'),
+            'snsr_log_tm': log_date.strftime('%H%M%S'),
+            'snsr_cd': sensor_code,
+            'snsr_vl': round(random.uniform(min_val, max_val), 3)
+        })
     return data
 
 def generate_dummy_ad_data(snsr_eqpmnt_uid, count=100):
