@@ -1,5 +1,5 @@
-from scripts.data.jdb_add_records import *
-from scripts.data.exmn_create import *
+from scripts.jdb_add_records import *
+from scripts import *
 # ... execution code ...
 
 # insert_unique_records()
