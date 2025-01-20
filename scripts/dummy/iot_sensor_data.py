@@ -238,7 +238,40 @@ def generate_unique_uid(table_name):
     unique_uid = f"{uid_prefix}_{timestamp}{random_suffix}"
     return unique_uid
 
+def clear_existing_data():
+    conn = connect_db()
+    cur = conn.cursor()
+    
+    try:
+        print("기존 데이터 삭제 중...")
+        
+        # RTU 데이터 삭제
+        cur.execute("DELETE FROM jadxdb2.rtu_snsr_log")
+        print("RTU 센서 데이터 삭제 완료")
+        
+        # AWS 데이터 삭제
+        cur.execute("DELETE FROM jadxdb2.agrclt_mlph_snsr_log")
+        print("AWS 센서 데이터 삭제 완료")
+        
+        # DT 데이터 삭제
+        cur.execute("DELETE FROM jadxdb2.ad_snsr_log")
+        print("DT 센서 데이터 삭제 완료")
+        
+        conn.commit()
+        print("모든 기존 데이터 삭제 완료")
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"데이터 삭제 중 오류 발생: {str(e)}")
+        raise
+    finally:
+        cur.close()
+        conn.close()
+
 def insert_dummy_data():
+    # 기존 데이터 삭제
+    clear_existing_data()
+    
     conn = connect_db()
     cur = conn.cursor()
     
@@ -311,6 +344,10 @@ def insert_dummy_data():
 
 if __name__ == "__main__":
     print("더미 데이터 생성 및 삽입 시작...")
-    insert_dummy_data()
-    print("프로그램 종료")
+    try:
+        insert_dummy_data()
+        print("프로그램 정상 종료")
+    except Exception as e:
+        print(f"오류 발생: {str(e)}")
+        print("프로그램 비정상 종료")
 
