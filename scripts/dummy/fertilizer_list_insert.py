@@ -5,11 +5,11 @@ import os
 
 load_dotenv()
 
-db_name = os.getenv('LOCAL_DB_CONFIG_DBNAME')
-db_user = os.getenv('LOCAL_DB_CONFIG_USER')
-db_password = os.getenv('LOCAL_DB_CONFIG_PASSWORD')
-db_host = os.getenv('LOCAL_DB_CONFIG_HOST')
-db_port = os.getenv('LOCAL_DB_CONFIG_PORT')
+db_name = os.getenv('SURVER_DB_CONFIG_DBNAME')
+db_user = os.getenv('SURVER_DB_CONFIG_USER')
+db_password = os.getenv('SURVER_DB_CONFIG_PASSWORD')
+db_host = os.getenv('SURVER_DB_CONFIG_HOST')
+db_port = os.getenv('SURVER_DB_CONFIG_PORT')
 
 # Database connection details
 db_config = {
@@ -676,19 +676,18 @@ def insert_fertilizerlist(data):
 
         # 데이터 삽입
         for fertilizer in data:
-            name = fertilizer["name"]
-            nitrogen = fertilizer["nh_pre_fert_n"]
-            phosphorus = fertilizer["nh_pre_fert_p"]
-            potassium = fertilizer["nh_pre_fert_k"]
-            # quantity = fertilizer["nh_pre_fert_qy"]
+            frtlzr_nm = fertilizer["name"]
+            ntrgn = fertilizer["nh_pre_fert_n"]
+            phsphrs = fertilizer["nh_pre_fert_p"]
+            ptssm = fertilizer["nh_pre_fert_k"]
 
             # SQL 쿼리
             insert_query = """
-            INSERT INTO fertilizerlist (name, nitrogen, phosphorus, potassium)
-            VALUES (%s, %s, %s, %s)
-            ON CONFLICT (name) DO NOTHING
+            INSERT INTO jadxdb2.frtlzr_lst (frtlzr_nm, ntrgn, phsphrs, ptssm, reg_uid)
+            VALUES (%s, %s, %s, %s, 'system')
+            ON CONFLICT (frtlzr_nm) DO NOTHING
             """
-            cursor.execute(insert_query, (name, nitrogen, phosphorus, potassium))
+            cursor.execute(insert_query, (frtlzr_nm, ntrgn, phsphrs, ptssm))
 
         # 변경 사항 커밋
         conn.commit()
