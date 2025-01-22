@@ -2,14 +2,15 @@ import psycopg2
 from psycopg2 import sql
 from dotenv import load_dotenv
 import os
+import uuid
 
 load_dotenv()
 
-db_name = os.getenv('LOCAL_DB_CONFIG_DBNAME')
-db_user = os.getenv('LOCAL_DB_CONFIG_USER')
-db_password = os.getenv('LOCAL_DB_CONFIG_PASSWORD')
-db_host = os.getenv('LOCAL_DB_CONFIG_HOST')
-db_port = os.getenv('LOCAL_DB_CONFIG_PORT')
+db_name = os.getenv('SURVER_DB_CONFIG_DBNAME')
+db_user = os.getenv('SURVER_DB_CONFIG_USER')
+db_password = os.getenv('SURVER_DB_CONFIG_PASSWORD')
+db_host = os.getenv('SURVER_DB_CONFIG_HOST')
+db_port = os.getenv('SURVER_DB_CONFIG_PORT')
 
 # Database connection details
 db_config = {
@@ -20,23 +21,23 @@ db_config = {
     'port': db_port
 }
 
-# crop_large_id 매핑
-crop_large_mapping = {
-    "곡류(벼)": 1,
-    "곡류(기타)": 2,
-    "유지류": 3,
-    "서류": 4,
-    "과채류": 5,
-    "근채류": 6,
-    "인경채류": 7,
-    "경엽채류": 8,
-    "산채류": 9,
-    "과수": 10,
-    "약용작물": 11,
-    "화훼류": 12,
-    "사료작물": 13,
-    "기타": 14,
-    "미분류": 15
+# crop_lg_uid 매핑 (임시 UID 사용)
+crop_lg_mapping = {
+    "곡류(벼)": "CROPLG_0001",
+    "곡류(기타)": "CROPLG_0002",
+    "유지류": "CROPLG_0003",
+    "서류": "CROPLG_0004",
+    "과채류": "CROPLG_0005",
+    "근채류": "CROPLG_0006",
+    "인경채류": "CROPLG_0007",
+    "경엽채류": "CROPLG_0008",
+    "산채류": "CROPLG_0009",
+    "과수": "CROPLG_0010",
+    "약용작물": "CROPLG_0011",
+    "화훼류": "CROPLG_0012",
+    "사료작물": "CROPLG_0013",
+    "기타": "CROPLG_0014",
+    "미분류": "CROPLG_0015"
 }
 
 # JSON 데이터 (여기서는 예시로 변수에 직접 할당)
@@ -846,63 +847,72 @@ data = {
   ]
 }
 
-def insert_cropsmall(data):
-    
-    # 중복된 코드를 찾기 위한 딕셔너리
-    code_count = {}
-    code_details = {}
+def generate_crop_sm_uid():
+    return f"CROPSM_{str(uuid.uuid4())[:8].upper()}"
 
-    # 각 작물의 코드 추출 및 카운트
-    for crop_large, crops in data.items():
-        for crop in crops:
-            code = crop.split('] ')[0][1:]  # 대괄호 제거
-            display_name = crop.split('] ')[1]  # 이름 추출
-            if code in code_count:
-                code_count[code] += 1
-                code_details[code].append((crop_large, display_name))
-            else:
-                code_count[code] = 1
-                code_details[code] = [(crop_large, display_name)]
-
-    # 중복된 코드 출력
-    duplicates = {code: count for code, count in code_count.items() if count > 1}
-
-    if duplicates:
-        print("중복된 코드:")
-        for code, count in duplicates.items():
-            print(f"코드: {code}, 개수: {count}")
-            print("포함된 작물:")
-            for crop_large, display_name in code_details[code]:
-                print(f"  - {crop_large}: {display_name}")
-    else:
-        print("중복된 코드가 없습니다.")
-    
+def insert_crop_lg():
     conn = None
     try:
-        # 데이터베이스 연결
+        conn = psycopg2.connect(**db_config)
+        cursor = conn.cursor()
+
+        # 기존 데이터 삭제
+        cursor.execute("TRUNCATE TABLE jadxdb2.crop_sm CASCADE")
+        cursor.execute("TRUNCATE TABLE jadxdb2.crop_lg CASCADE")
+
+        # crop_lg 테이블에 대분류 데이터 삽입
+        for crop_lg_nm, crop_lg_uid in crop_lg_mapping.items():
+            insert_query = """
+            INSERT INTO jadxdb2.crop_lg (
+                crop_lg_uid, crop_lg_nm, reg_uid
+            )
+            VALUES (%s, %s, 'SYSTEM')
+            ON CONFLICT (crop_lg_uid) DO NOTHING
+            """
+            cursor.execute(insert_query, (crop_lg_uid, crop_lg_nm))
+
+        conn.commit()
+        print("Crop large categories inserted successfully.")
+
+    except Exception as e:
+        print(f"An error occurred while inserting crop_lg: {e}")
+        if conn:
+            conn.rollback()
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
+def insert_crop_sm(data):
+    conn = None
+    try:
         conn = psycopg2.connect(**db_config)
         cursor = conn.cursor()
 
         # 데이터 삽입
-        for crop_large, crops in data.items():
-            crop_large_id = crop_large_mapping[crop_large]
+        for crop_lg, crops in data.items():
+            crop_lg_uid = crop_lg_mapping[crop_lg]
             for crop in crops:
-                code, display_name = crop.split('] ')
+                code, name = crop.split('] ')
                 code = code[1:]  # 대괄호 제거
-                name = display_name  # 이름은 display_name과 동일
+                display_name = f"[{code}] {name}"  # dsply_nm 형식
+                crop_sm_uid = generate_crop_sm_uid()
 
-                # display_name을 "[code] name" 형식으로 설정
-                display_name = f"[{code}] {name}"
-
-                # SQL 쿼리
                 insert_query = """
-                INSERT INTO cropsmall (crop_large_id, display_name, name, code)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT (code) DO NOTHING
+                INSERT INTO jadxdb2.crop_sm (
+                    crop_sm_uid, crop_lg_uid, crop_sm_nm, cd, dsply_nm, reg_uid
+                )
+                VALUES (%s, %s, %s, %s, %s, 'SYSTEM')
+                ON CONFLICT (cd) DO UPDATE 
+                SET 
+                    crop_lg_uid = EXCLUDED.crop_lg_uid,
+                    crop_sm_nm = EXCLUDED.crop_sm_nm,
+                    dsply_nm = EXCLUDED.dsply_nm,
+                    mdfcn_uid = 'SYSTEM',
+                    mdfcn_dt = CURRENT_TIMESTAMP
                 """
-                cursor.execute(insert_query, (crop_large_id, display_name, name, code))
+                cursor.execute(insert_query, (crop_sm_uid, crop_lg_uid, name.strip(), code, display_name))
 
-        # 변경 사항 커밋
         conn.commit()
         print("Data inserted successfully.")
 
@@ -916,4 +926,7 @@ def insert_cropsmall(data):
             conn.close()
 
 if __name__ == "__main__":
-    insert_cropsmall(data)
+    # 먼저 대분류 데이터 삽입
+    insert_crop_lg()
+    # 그 다음 소분류 데이터 삽입
+    insert_crop_sm(data)
