@@ -1,4 +1,5 @@
 import json
+import csv
 
 # JSON 데이터 정의
 crop_data = {
@@ -810,3 +811,18 @@ crop_data = {
 # JSON 파일로 저장
 with open('crop_categories.json', 'w', encoding='utf-8') as f:
     json.dump(crop_data, f, ensure_ascii=False, indent=2)
+
+# CSV 파일로 저장
+with open('crop_categories.csv', 'w', encoding='utf-8', newline='') as f:
+    writer = csv.writer(f)
+    
+    # 헤더 작성
+    writer.writerow(['카테고리', '작물코드', '작물명'])
+    
+    # 데이터 작성
+    for category, items in crop_data.items():
+        for item in items:
+            # [00000] 작물명 형식에서 코드와 작물명 분리
+            code = item[1:6]  # 00000 부분 추출
+            name = item[8:]   # 작물명 부분 추출
+            writer.writerow([category, code, name])
