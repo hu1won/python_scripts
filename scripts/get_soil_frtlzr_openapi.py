@@ -4,8 +4,8 @@ import json
 url = 'http://apis.data.go.kr/1390802/SoilEnviron/FrtlzrUse/getSoilFrtlzrExamInfo'
 params = {
     'serviceKey': '',
-    'PNU_Code': '5271033027106720012',
-    'crop_Code': '01001'
+    'PNU_Code': '5011025628110850001',
+    'crop_Code': '09001'
 }
 
 try:
