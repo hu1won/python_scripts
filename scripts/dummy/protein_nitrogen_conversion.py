@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 import time
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 # 환경 변수 로드
@@ -25,11 +25,11 @@ session = Session()
 
 try:
     # food_category 테이블에서 특정 crop_sm_uid를 가진 데이터 조회 및 업데이트
-    query = """
-    UPDATE food_category 
+    query = text("""
+    UPDATE jadxdb2.food_category 
     SET ntrgn = (ntrgn / 1000 / 6.25)  -- g를 kg으로 변환(1000으로 나눔)하고 6.25로 나눔
     WHERE crop_sm_uid = 'CROPSM_6CA61FFC'
-    """
+    """)
     
     session.execute(query)
     session.commit()
