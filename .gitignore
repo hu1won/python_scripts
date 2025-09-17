@@ -5,3 +5,6 @@ __pycache__
 private/
 *.xlsx
 *.parquet
+
+*.log
+*.sql
